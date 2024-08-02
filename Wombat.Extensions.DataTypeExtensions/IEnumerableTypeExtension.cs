@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Wombat.Extensions.DataTypeExtensions
 {
@@ -40,6 +41,22 @@ namespace Wombat.Extensions.DataTypeExtensions
         }
 
         /// <summary>
+        /// 给 IEnumerable 拓展 ForEachAsync 方法
+        /// </summary>
+        /// <typeparam name="T">模型类</typeparam>
+        /// <param name="iEnumerable">数据源</param>
+        /// <param name="func">异步方法</param>
+        /// <returns>Task</returns>
+        public static async Task ForEachAsync<T>(this IEnumerable<T> iEnumerable, Func<T, Task> func)
+        {
+            foreach (var item in iEnumerable)
+            {
+                await func(item);
+            }
+        }
+
+
+        /// <summary>
         /// 给IEnumerable拓展ForEach方法
         /// </summary>
         /// <typeparam name="T">模型类</typeparam>
@@ -53,6 +70,29 @@ namespace Wombat.Extensions.DataTypeExtensions
                 func(array[i], i);
             }
         }
+
+
+
+
+        /// <summary>
+        /// 给 IEnumerable 拓展 ForEachAsync 方法（顺序执行）
+        /// </summary>
+        /// <typeparam name="T">模型类</typeparam>
+        /// <param name="iEnumerable">数据源</param>
+        /// <param name="func">异步方法</param>
+        /// <returns>Task</returns>
+        public static async Task ForEachAsync<T>(this IEnumerable<T> iEnumerable, Func<T, int, Task> func)
+        {
+            var array = iEnumerable.ToArray();
+            for (int i = 0; i < array.Length; i++)
+            {
+                await func(array[i], i);
+            }
+        }
+
+
+
+
 
         /// <summary>
         /// IEnumerable转换为List'T'
