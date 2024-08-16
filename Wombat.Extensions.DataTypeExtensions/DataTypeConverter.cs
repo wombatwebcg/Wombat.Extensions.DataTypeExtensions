@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Wombat.Extensions.DataTypeExtensions
 {
-    public static class DataTypeConverter
+    public static partial class DataTypeExtensions
     {
-        public static DataTypeEnum ToDataTypeEnum(Type type)
+        public static DataTypeEnum ToDataTypeEnum(this Type type)
         {
             if (type == null || !type.IsValueType || type.IsPrimitive || type == typeof(string))
                 throw new ArgumentException("Input type must be a non-null struct or string.", nameof(type));
@@ -26,7 +26,7 @@ namespace Wombat.Extensions.DataTypeExtensions
             return DataTypeEnum.None;
         }
 
-        public static Type ToStructType(DataTypeEnum dataType)
+        public static Type ToStructType(this DataTypeEnum dataType)
         {
             switch (dataType)
             {
@@ -45,7 +45,7 @@ namespace Wombat.Extensions.DataTypeExtensions
             }
         }
 
-        public static T ConvertToType<T>(object value, DataTypeEnum dataType) where T : struct
+        public static T ToType<T>(this object value, DataTypeEnum dataType) where T : struct
         {
             try
             {
@@ -73,7 +73,7 @@ namespace Wombat.Extensions.DataTypeExtensions
             }
         }
 
-        public static T ConvertFromString<T>(string value, DataTypeEnum dataType) where T : struct
+        public static T ConvertFromString<T>(this string value, DataTypeEnum dataType) where T : struct
         {
             try
             {
@@ -101,5 +101,53 @@ namespace Wombat.Extensions.DataTypeExtensions
             }
         }
 
+        public static object ConvertFromStringToObject(this string value, DataTypeEnum dataType)
+        {
+            Type targetType = null;
+            try
+            {
+                // 获取目标类型
+                targetType = ToStructType(dataType);
+
+                // 将字符串转换为目标类型
+                return Convert.ChangeType(value, targetType);
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidCastException($"Unable to cast value to type {targetType?.Name}.");
+            }
+            catch (FormatException)
+            {
+                throw new FormatException($"The value provided is not in the correct format for type {targetType?.Name}.");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred during conversion: {ex.Message}");
+            }
+        }
+
+        public static DataTypeEnum GetDataTypeEnumFromObject(this object value)
+        {
+            if (value == null)
+            {
+                return DataTypeEnum.None;
+            }
+
+            Type type = value.GetType();
+
+            if (type == typeof(bool)) return DataTypeEnum.Bool;
+            if (type == typeof(byte)) return DataTypeEnum.Byte;
+            if (type == typeof(short)) return DataTypeEnum.Int16;
+            if (type == typeof(ushort)) return DataTypeEnum.UInt16;
+            if (type == typeof(int)) return DataTypeEnum.Int32;
+            if (type == typeof(uint)) return DataTypeEnum.UInt32;
+            if (type == typeof(long)) return DataTypeEnum.Int64;
+            if (type == typeof(ulong)) return DataTypeEnum.UInt64;
+            if (type == typeof(float)) return DataTypeEnum.Float;
+            if (type == typeof(double)) return DataTypeEnum.Double;
+            if (type == typeof(string)) return DataTypeEnum.String;
+
+            return DataTypeEnum.None; // 默认返回None，表示不支持的类型
+        }
     }
 }
