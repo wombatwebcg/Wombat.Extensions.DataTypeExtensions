@@ -5,7 +5,7 @@ namespace Wombat.Extensions.DataTypeExtensions
     /// <summary>
     /// 数据类型
     /// </summary>
-    public enum DataTypeEnum
+    public enum DataTypeEnums
     {
         /// <summary>
         /// 未定义
