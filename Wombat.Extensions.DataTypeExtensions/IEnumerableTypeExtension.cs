@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -152,5 +153,11 @@ namespace Wombat.Extensions.DataTypeExtensions
             return enumerable.Skip(startIndex).Take(size);
         }
 
+
+
+        public static ObservableCollection<T> ToObservableCollection<T>(this List<T> model)
+        {
+            return new ObservableCollection<T>(model);
+        }
     }
 }

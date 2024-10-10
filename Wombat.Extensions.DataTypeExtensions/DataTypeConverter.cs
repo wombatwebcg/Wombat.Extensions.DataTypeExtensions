@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Wombat.Extensions.DataTypeExtensions
@@ -179,5 +180,7 @@ namespace Wombat.Extensions.DataTypeExtensions
 
             return DataTypeEnums.None; // 默认返回None，表示不支持的类型
         }
+
+
     }
 }
