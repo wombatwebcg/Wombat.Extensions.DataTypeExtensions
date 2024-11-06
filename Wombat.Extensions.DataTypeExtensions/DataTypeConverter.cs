@@ -115,6 +115,13 @@ namespace Wombat.Extensions.DataTypeExtensions
                 if (targetType != typeof(T))
                     throw new InvalidOperationException($"Target type {typeof(T).Name} does not match the DataTypeEnum provided.");
 
+                // 特殊处理布尔类型
+                if (typeof(T) == typeof(bool))
+                {
+                    if (value == "0") return (T)(object)false;
+                    if (value == "1") return (T)(object)true;
+                }
+
                 // 将字符串转换为目标类型
                 return (T)Convert.ChangeType(value, targetType);
             }
