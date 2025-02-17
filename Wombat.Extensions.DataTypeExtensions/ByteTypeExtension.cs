@@ -17,9 +17,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="encoding">指定编码</param>
         /// <returns></returns>
         public static string ToString(this byte[] bytes, Encoding encoding)
-        {
-            return encoding.GetString(bytes);
-        }
+            => encoding.GetString(bytes);
 
         /// <summary>
         /// 将byte[]转为Base64字符串
@@ -27,9 +25,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="bytes">字节数组</param>
         /// <returns></returns>
         public static string ToBase64String(this byte[] bytes)
-        {
-            return Convert.ToBase64String(bytes);
-        }
+               => Convert.ToBase64String(bytes);
 
         /// <summary>
         /// 转为二进制字符串
@@ -37,9 +33,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="aByte">字节</param>
         /// <returns></returns>
         public static string ToBinString(this byte aByte)
-        {
-            return new byte[] { aByte }.ToBinString();
-        }
+            => Convert.ToString(aByte, 2).PadLeft(8, '0');
 
         /// <summary>
         /// 转为二进制字符串
@@ -48,15 +42,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="bytes">字节数组</param>
         /// <returns></returns>
         public static string ToBinString(this byte[] bytes)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (var aByte in bytes)
-            {
-                builder.Append(Convert.ToString(aByte, 2).PadLeft(8, '0'));
-            }
-
-            return builder.ToString();
-        }
+            => string.Concat(bytes.Select(b => Convert.ToString(b, 2).PadLeft(8, '0')));
 
         /// <summary>
         /// Byte数组转为对应的16进制字符串
@@ -64,15 +50,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="bytes">Byte数组</param>
         /// <returns></returns>
         public static string ToHexString(this byte[] bytes)
-        {
-            StringBuilder resStr = new StringBuilder();
-            bytes.ToList().ForEach(aByte =>
-            {
-                resStr.Append(aByte.ToString("x2"));
-            });
-
-            return resStr.ToString();
-        }
+            => BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
 
         /// <summary>
         /// Byte数组转为对应的16进制字符串
@@ -80,9 +58,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="aByte">一个Byte</param>
         /// <returns></returns>
         public static string ToHexString(this byte aByte)
-        {
-            return new byte[] { aByte }.ToHexString();
-        }
+            => aByte.ToString("x2");
 
         /// <summary>
         /// 转为ASCII字符串（一个字节对应一个字符）
@@ -90,15 +66,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="bytes">字节数组</param>
         /// <returns></returns>
         public static string ToASCIIString(this byte[] bytes)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            bytes.ToList().ForEach(aByte =>
-            {
-                stringBuilder.Append((char)aByte);
-            });
-
-            return stringBuilder.ToString();
-        }
+            => Encoding.ASCII.GetString(bytes);
 
         /// <summary>
         /// 转为ASCII字符串（一个字节对应一个字符）
@@ -106,9 +74,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="aByte">字节数组</param>
         /// <returns></returns>
         public static string ToASCIIString(this byte aByte)
-        {
-            return new byte[] { aByte }.ToASCIIString();
-        }
+            => ((char)aByte).ToString();
 
         /// <summary>
         /// 获取异或值
@@ -117,15 +83,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="bytes">字节数组</param>
         /// <returns></returns>
         public static byte GetXOR(this byte[] bytes)
-        {
-            int value = bytes[0];
-            for (int i = 1; i < bytes.Length; i++)
-            {
-                value = value ^ bytes[i];
-            }
-
-            return (byte)value;
-        }
+            => bytes.Aggregate((byte)0, (current, b) => (byte)(current ^ b));
 
 
 
@@ -138,9 +96,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">位的索引</param>
         /// <returns>bool对象</returns>
         public static bool ToBool(this byte[] buffer, int index = 0)
-        {
-            return ((buffer[index] & 0x01) == 0x01);
-        }
+            => (buffer[index] & 0x01) == 0x01;
 
 
         /// <summary>
@@ -150,18 +106,20 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">位的索引</param>
         /// <param name="length">bool长度</param>
         /// <returns>bool数组</returns>
-        public static bool[] ToBool(this byte[] buffer, int index, int length, bool reverse = false)
+        public static bool[] ToBoolArray(this byte[] buffer, int index, int length, bool reverse = false)
         {
-            int realLength = (int)Math.Ceiling(length / 8.0);
-            byte[] temp = new byte[realLength];
-            int bufferLength = buffer.Length - index;
-            if (bufferLength <= realLength)
+            int byteLength = (int)Math.Ceiling(length / 8.0);
+            byte[] bytesArray = new byte[byteLength];
+            buffer.AsSpan(index, byteLength).CopyTo(bytesArray);
+
+            if (reverse)
             {
-                realLength = bufferLength;
+                Array.Reverse(bytesArray);
             }
-            Array.Copy(buffer, index, temp, 0, realLength);
-            if (reverse) { temp = temp.Reverse().ToArray(); }
-            return ByteToBoolArray(temp, length);
+
+            return Enumerable.Range(0, length)
+                .Select(i => (bytesArray[i / 8] & (1 << (7 - i % 8))) != 0)
+                .ToArray();
         }
 
         /// <summary>
@@ -170,10 +128,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存数据</param>
         /// <param name="index">索引位置</param>
         /// <returns>byte对象</returns>
-        public static byte ToByte(this byte[] buffer, int index)
-        {
-            return buffer[index];
-        }
+        public static byte ToByte(this byte[] buffer, int index) => buffer[index];
 
         /// <summary>
         /// 从缓存中提取byte数组结果
@@ -182,14 +137,21 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>byte数组对象</returns>
-        public static byte[] ToByte(this byte[] buffer, int index, int length)
+        public static byte[] ToBytes(this byte[] buffer, int index, int length)
+            => buffer.AsSpan(index, length).ToArray();
+
+
+        private static T[] ConvertNumerics<T>(this byte[] buffer, int index, int count, int typeSize, Func<byte[], int, T> converter, bool reverse = false)
         {
-            byte[] tmp = new byte[length];
-            Array.Copy(buffer, index, tmp, 0, length);
-            return tmp;
+            var result = new T[count];
+            for (int i = 0; i < count; i++)
+            {
+                var span = buffer.AsSpan(index + i * typeSize, typeSize);
+                if (reverse) span.Reverse();
+                result[i] = converter(span.ToArray(), 0);
+            }
+            return result;
         }
-
-
         /// <summary>
         /// 从缓存中提取short结果
         /// </summary>
@@ -197,9 +159,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <returns>short对象</returns>
         public static short ToInt16(this byte[] buffer, int index = 0, bool reverse = false)
-        {
-            return ToInt16(buffer, index, 1, reverse)[0];
-        }
+       => ConvertNumerics(buffer, index, 1, 2, BitConverter.ToInt16, reverse)[0];
 
         /// <summary>
         /// 从缓存中提取short数组结果
@@ -209,24 +169,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="length">读取的数组长度</param>
         /// <returns>short数组对象</returns>
         public static short[] ToInt16(this byte[] buffer, int index, int length, bool reverse = false)
-        {
-            short[] result = new short[length];
-            for (int i = 0; i < length; i++)
-            {
-                byte[] temp = new byte[2];
-                if (reverse)
-                {
-                    temp[0] = buffer[1 + index + 2 * i];
-                    temp[1] = buffer[0 + index + 2 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 2 * i, temp, 0, 2);
-                }
-                result[i] = BitConverter.ToInt16(temp, 0);
-            }
-            return result;
-        }
+        => ConvertNumerics(buffer, index, length, 2, BitConverter.ToInt16, reverse);
 
 
         /// <summary>
@@ -236,10 +179,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <returns>ushort对象</returns>
         public static ushort ToUInt16(this byte[] buffer, int index = 0, bool reverse = false)
-        {
-            return ToUInt16(buffer, index, 1, reverse)[0];
-        }
-
+        => ConvertNumerics(buffer, index, 1, 2, BitConverter.ToUInt16, reverse)[0];
         /// <summary>
         /// 从缓存中提取ushort数组结果
         /// </summary>
@@ -248,26 +188,85 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="length">读取的数组长度</param>
         /// <returns>ushort数组对象</returns>
         public static ushort[] ToUInt16(this byte[] buffer, int index, int length, bool reverse = false)
+        => ConvertNumerics(buffer, index, length, 2, BitConverter.ToUInt16, reverse);
+
+
+
+        private static byte[] AdjustEndian(byte[] bytes, EndianFormat format, int size)
         {
-            ushort[] result = new ushort[length];
-            for (int i = 0; i < length; i++)
+            // 基本的合法性检查
+            if (bytes.Length != size)
             {
-                byte[] temp = new byte[2];
-                if (reverse)
-                {
-                    temp[0] = buffer[1 + index + 2 * i];
-                    temp[1] = buffer[0 + index + 2 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 2 * i, temp, 0, 2);
-                }
-                result[i] = BitConverter.ToUInt16(temp, 0);
+                throw new ArgumentOutOfRangeException(nameof(bytes), "Byte array length does not match the specified size.");
             }
-            return result;
+
+            // 根据字节序处理不同格式
+            switch (format)
+            {
+                case EndianFormat.ABCD:
+                    if (bytes.Length == 4)
+                    {
+                        return new byte[] { bytes[3], bytes[2], bytes[1], bytes[0] };
+                    }
+                    else if (bytes.Length == 8)
+                    {
+                        return new byte[] { bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0]};
+                    }
+
+                    break;
+
+                case EndianFormat.BADC:
+                    // 交换字节顺序：适用于 4 字节 或 8 字节
+                    if (bytes.Length == 4)
+                    {
+                        return new byte[] { bytes[2], bytes[3], bytes[0], bytes[1] };
+                    }
+                    else if (bytes.Length == 8)
+                    {
+                        return new byte[] { bytes[6], bytes[7], bytes[4], bytes[5], bytes[2], bytes[3], bytes[0], bytes[1] };
+                    }
+                    break;
+
+                case EndianFormat.CDAB:
+                    // 交换字节顺序：适用于 4 字节 或 8 字节
+                    if (bytes.Length == 4)
+                    {
+                        return new byte[] { bytes[1], bytes[0], bytes[3], bytes[2] };
+                    }
+                    else if (bytes.Length == 8)
+                    {
+                        return new byte[] { bytes[5], bytes[4], bytes[7], bytes[6], bytes[1], bytes[0], bytes[3], bytes[2]};
+                    }
+                    break;
+
+                case EndianFormat.DCBA:
+                    // 反转字节数组：适用于 4 字节 或 8 字节
+                    if (bytes.Length == 4)
+                    {
+                        return new byte[] { bytes[0], bytes[1], bytes[2], bytes[3] };
+                    }
+                    else if (bytes.Length == 8)
+                    {
+                        return new byte[] { bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]};
+                    }
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format), "Unsupported Endian format.");
+            }
+
+            // 如果没有匹配的格式，抛出异常
+            throw new ArgumentOutOfRangeException(nameof(format), "Unsupported format or size.");
         }
 
 
+        private static T ConvertWithEndian<T>(byte[] bytes, EndianFormat format, Func<byte[], int, T> converter)
+        {
+            var size = bytes.Length;
+            var adjusted = AdjustEndian(bytes, format, size);
+            var result = converter(adjusted, 0);            
+            return result;
+        }
 
         /// <summary>
         /// 从缓存中提取int结果
@@ -275,10 +274,9 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存数据</param>
         /// <param name="index">索引位置</param>
         /// <returns>int对象</returns>
-        public static int ToInt32(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToInt32(buffer, index, 1, format, reverse)[0];
-        }
+        public static int ToInt32(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD)
+        => ConvertWithEndian(buffer.AsSpan(index, 4).ToArray(), format, BitConverter.ToInt32);
+
 
         /// <summary>
         /// 从缓存中提取int数组结果
@@ -287,25 +285,18 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>int数组对象</returns>
-        public static int[] ToInt32(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
+        public static int[] ToInt32(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            int[] result = new int[length];
-            for (int i = 0; i < length; i++)
+            if (length % 4 != 0)
             {
-                byte[] temp = new byte[4];
+                throw new ArgumentException("Length must be a multiple of 4 for ToInt32 conversion.");
+            }
 
-                if (reverse)
-                {
-                    temp[0] = buffer[3 + index + 4 * i];
-                    temp[1] = buffer[2 + index + 4 * i];
-                    temp[2] = buffer[1 + index + 4 * i];
-                    temp[3] = buffer[0 + index + 4 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 4 * i, temp, 0, 4);
-                }
-                result[i] = BitConverter.ToInt32(ByteToDataFormat4(temp, 0, format), 0);
+            var result = new int[length / 4];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var byteSegment = buffer.AsSpan(index + i * 4, 4).ToArray();
+                result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToInt32);
             }
             return result;
         }
@@ -318,10 +309,9 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存数据</param>
         /// <param name="index">索引位置</param>
         /// <returns>uint对象</returns>
-        public static uint ToUInt32(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToUInt32(buffer, index, 1, format, reverse)[0];
-        }
+        public static uint ToUInt32(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD)
+        => ConvertWithEndian(buffer.AsSpan(index, 4).ToArray(), format, BitConverter.ToUInt32);
+
 
         /// <summary>
         /// 从缓存中提取uint数组结果
@@ -330,25 +320,18 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>uint数组对象</returns>
-        public static uint[] ToUInt32(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
+        public static uint[] ToUInt32(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            uint[] result = new uint[length];
-            for (int i = 0; i < length; i++)
+            if (length % 4 != 0)
             {
-                byte[] temp = new byte[4];
+                throw new ArgumentException("Length must be a multiple of 4 for ToUInt32 conversion.");
+            }
 
-                if (reverse)
-                {
-                    temp[0] = buffer[3 + index + 4 * i];
-                    temp[1] = buffer[2 + index + 4 * i];
-                    temp[2] = buffer[1 + index + 4 * i];
-                    temp[3] = buffer[0 + index + 4 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 4 * i, temp, 0, 4);
-                }
-                result[i] = BitConverter.ToUInt32(ByteToDataFormat4(temp, 0, format), 0);
+            var result = new uint[length / 4];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var byteSegment = buffer.AsSpan(index + i * 4, 4).ToArray();
+                result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToUInt32);
             }
             return result;
         }
@@ -359,10 +342,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存数据</param>
         /// <param name="index">索引位置</param>
         /// <returns>long对象</returns>
-        public static long ToInt64(this byte[] buffer, int index, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToInt64(buffer, index, 1, format, reverse)[0];
-        }
+        public static long ToInt64(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD)
+        => ConvertWithEndian(buffer.AsSpan(index, 8).ToArray(), format, BitConverter.ToInt64);
 
         /// <summary>
         /// 从缓存中提取long数组结果
@@ -371,31 +352,22 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>long数组对象</returns>
-        public static long[] ToInt64(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
+        public static long[] ToInt64(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            long[] result = new long[length];
-            for (int i = 0; i < length; i++)
+            if (length % 8 != 0)
             {
-                byte[] temp = new byte[8];
-                if (reverse)
-                {
-                    temp[0] = buffer[7 + index + 8 * i];
-                    temp[1] = buffer[6 + index + 8 * i];
-                    temp[2] = buffer[5 + index + 8 * i];
-                    temp[3] = buffer[4 + index + 8 * i];
-                    temp[4] = buffer[3 + index + 8 * i];
-                    temp[5] = buffer[2 + index + 8 * i];
-                    temp[6] = buffer[1 + index + 8 * i];
-                    temp[7] = buffer[0 + index + 8 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 8 * i, temp, 0, 8);
-                }
-                result[i] = BitConverter.ToInt64(ByteToDataFormat8(temp, 0, format), 0);
+                throw new ArgumentException("Length must be a multiple of 8 for ToInt64 conversion.");
+            }
+
+            var result = new long[length / 8];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var byteSegment = buffer.AsSpan(index + i * 8, 8).ToArray();
+                result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToInt64);
             }
             return result;
         }
+
 
 
         /// <summary>
@@ -404,10 +376,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存数据</param>
         /// <param name="index">索引位置</param>
         /// <returns>ulong对象</returns>
-        public static ulong ToUInt64(this byte[] buffer, int index, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToUInt64(buffer, index, 1, format, reverse)[0];
-        }
+        public static ulong ToUInt64(this byte[] buffer, int index, EndianFormat format = EndianFormat.ABCD)
+        => ConvertWithEndian(buffer.AsSpan(index, 8).ToArray(), format, BitConverter.ToUInt64);
 
         /// <summary>
         /// 从缓存中提取ulong数组结果
@@ -416,28 +386,18 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>ulong数组对象</returns>
-        public static ulong[] ToUInt64(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
+        public static ulong[] ToUInt64(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            ulong[] result = new ulong[length];
-            for (int i = 0; i < length; i++)
+            if (length % 8 != 0)
             {
-                byte[] temp = new byte[8];
-                if (reverse)
-                {
-                    temp[0] = buffer[7 + index + 8 * i];
-                    temp[1] = buffer[6 + index + 8 * i];
-                    temp[2] = buffer[5 + index + 8 * i];
-                    temp[3] = buffer[4 + index + 8 * i];
-                    temp[4] = buffer[3 + index + 8 * i];
-                    temp[5] = buffer[2 + index + 8 * i];
-                    temp[6] = buffer[1 + index + 8 * i];
-                    temp[7] = buffer[0 + index + 8 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 8 * i, temp, 0, 8);
-                }
-                result[i] = BitConverter.ToUInt64(ByteToDataFormat8(temp, 0, format), 0);
+                throw new ArgumentException("Length must be a multiple of 8 for ToInt64 conversion.");
+            }
+
+            var result = new ulong[length / 8];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var byteSegment = buffer.AsSpan(index + i * 8, 8).ToArray();
+                result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToUInt64);
             }
             return result;
         }
@@ -448,10 +408,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存对象</param>
         /// <param name="index">索引位置</param>
         /// <returns>float对象</returns>
-        public static float ToFloat(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToFloat(buffer, index, 1, format, reverse)[0];
-        }
+        public static float ToFloat(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD)
+        => ConvertWithEndian(buffer.AsSpan(index, 4).ToArray(), format, BitConverter.ToSingle);
 
         /// <summary>
         /// 从缓存中提取float数组结果
@@ -460,29 +418,20 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>float数组对象</returns>
-        public static float[] ToFloat(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
+        public static float[] ToFloat(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-
-            float[] reuslt = new float[length];
-            for (int i = 0; i < length; i++)
+            if (length % 4 != 0)
             {
-                byte[] temp = new byte[4];
-                if (reverse)
-                {
-                    temp[0] = buffer[3 + index + 4 * i];
-                    temp[1] = buffer[2 + index + 4 * i];
-                    temp[2] = buffer[1 + index + 4 * i];
-                    temp[3] = buffer[0 + index + 4 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 4 * i, temp, 0, 4);
-
-                }
-                reuslt[i] = BitConverter.ToSingle(ByteToDataFormat4(temp, 0, format), 0);
-
+                throw new ArgumentException("Length must be a multiple of 4 for float conversion.");
             }
-            return reuslt;
+
+            var result = new float[length / 4];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var byteSegment = buffer.AsSpan(index + i * 4, 4).ToArray();
+                result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToSingle);
+            }
+            return result;
         }
 
 
@@ -492,10 +441,9 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="buffer">缓存对象</param>
         /// <param name="index">索引位置</param>
         /// <returns>double对象</returns>
-        public static double ToDouble(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToDouble(buffer, index, 1, format, reverse)[0];
-        }
+        public static double ToDouble(this byte[] buffer, int index = 0, EndianFormat format = EndianFormat.ABCD)
+        => ConvertWithEndian(buffer.AsSpan(index, 8).ToArray(), format, BitConverter.ToDouble);
+
         /// <summary>
         /// 从缓存中提取double数组结果
         /// </summary>
@@ -503,31 +451,22 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">索引位置</param>
         /// <param name="length">读取的数组长度</param>
         /// <returns>double数组对象</returns>
-        public static double[] ToDouble(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
+        public static double[] ToDouble(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            double[] result = new double[length];
-            for (int i = 0; i < length; i++)
+            if (length % 8 != 0)
             {
-                byte[] temp = new byte[8];
-                if (reverse)
-                {
-                    temp[0] = buffer[7 + index + 8 * i];
-                    temp[1] = buffer[6 + index + 8 * i];
-                    temp[2] = buffer[5 + index + 8 * i];
-                    temp[3] = buffer[4 + index + 8 * i];
-                    temp[4] = buffer[3 + index + 8 * i];
-                    temp[5] = buffer[2 + index + 8 * i];
-                    temp[6] = buffer[1 + index + 8 * i];
-                    temp[7] = buffer[0 + index + 8 * i];
-                }
-                else
-                {
-                    Array.Copy(buffer, index + 8 * i, temp, 0, 8);
-                }
-                result[i] = BitConverter.ToDouble(ByteToDataFormat8(temp, 0, format), 0);
+                throw new ArgumentException("Length must be a multiple of 8 for double conversion.");
+            }
+
+            var result = new double[length / 8];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var byteSegment = buffer.AsSpan(index + i * 8, 8).ToArray();
+                result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToDouble);
             }
             return result;
         }
+
 
 
         /// <summary>
@@ -540,8 +479,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>string对象</returns>
         public static string ToString(this byte[] buffer, int index, int length, Encoding encoding)
         {
-            byte[] tmp = ToByte(buffer, index, length);
-            return encoding.GetString(tmp);
+            var bytes = buffer.AsSpan(index, length);
+            return encoding.GetString(bytes.ToArray());
         }
 
 
@@ -550,15 +489,36 @@ namespace Wombat.Extensions.DataTypeExtensions
         #region Get Bytes From Value
 
 
+        private static byte[] NumericToBytes<T>(T[] values, Func<T, byte[]> converter, EndianFormat format = EndianFormat.ABCD)
+        {
+            var result = new byte[values.Length * converter(default(T)).Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                var bytes = converter(values[i]);
+                AdjustEndian(bytes, format, bytes.Length).CopyTo(result, i * bytes.Length);
+            }
+            return result;
+        }
+
+        public static byte[] NumericToBytes<T>(T[] values, Func<T, byte[]> converter, bool reverse = false)
+        {
+            var result = new byte[values.Length * converter(default(T)).Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                var bytes = converter(values[i]);
+                if (reverse) Array.Reverse(bytes);
+                bytes.CopyTo(result, i * bytes.Length);
+            }
+            return result;
+        }
+
         /// <summary>
         /// bool变量转化缓存数据
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
         public static byte[] ToByte(this bool value)
-        {
-            return ToByte(new bool[] { value });
-        }
+         => BitConverter.GetBytes(value);
 
         /// <summary>
         /// bool数组变量转化缓存数据
@@ -566,22 +526,10 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
         public static byte[] ToByte(this bool[] values)
-        {
-            if (values == null) return null;
-
-            return BoolArrayToByte(values);
-        }
+         => values.SelectMany((b, i) => BitConverter.GetBytes(b)).ToArray();
 
 
-        /// <summary>
-        /// byte变量转化缓存数据
-        /// </summary>
-        /// <param name="value">等待转化的数据</param>
-        /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this byte value)
-        {
-            return new byte[] { value };
-        }
+
 
 
         /// <summary>
@@ -590,10 +538,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
         public static byte[] ToByte(this short value, bool reverse = false)
-        {
-            return ToByte(new short[] { value }, reverse);
-        }
-
+            => NumericToBytes(new short[] { value }, BitConverter.GetBytes, reverse);
 
         /// <summary>
         /// short数组变量转化缓存数据
@@ -601,26 +546,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
         public static byte[] ToByte(this short[] values, bool reverse = false)
-        {
-            if (values == null) return null;
-            byte[] buffer = new byte[values.Length * 2];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] temp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(temp);
-                    temp.CopyTo(buffer, 2 * i);
-
-                }
-                else
-                {
-                    BitConverter.GetBytes(values[i]).CopyTo(buffer, 2 * i);
-                }
-            }
-            return buffer;
-        }
-
+           => NumericToBytes(values, BitConverter.GetBytes, reverse);
 
         /// <summary>
         /// ushort变量转化缓存数据
@@ -628,9 +554,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
         public static byte[] ToByte(this ushort value, bool reverse = false)
-        {
-            return ToByte(new ushort[] { value }, reverse);
-        }
+            => NumericToBytes(new ushort[] { value }, BitConverter.GetBytes, reverse);
 
 
         /// <summary>
@@ -639,27 +563,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
         public static byte[] ToByte(this ushort[] values, bool reverse = false)
-        {
-            if (values == null) return null;
+           => NumericToBytes(values, BitConverter.GetBytes, reverse);
 
-            byte[] buffer = new byte[values.Length * 2];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    tmp.CopyTo(buffer, 2 * i);
-
-                }
-                else
-                {
-                    BitConverter.GetBytes(values[i]).CopyTo(buffer, 2 * i);
-                }
-            }
-
-            return buffer;
-        }
 
 
         /// <summary>
@@ -667,10 +572,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this int value, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToByte(new int[] { value }, format, reverse);
-        }
+        public static byte[] ToByte(this int value, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(new int[1] { value }, BitConverter.GetBytes, format);
 
 
         /// <summary>
@@ -678,38 +581,17 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this int[] values, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            if (values == null) return null;
+        public static byte[] ToByte(this int[] values, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(values, BitConverter.GetBytes, format);
 
-            byte[] buffer = new byte[values.Length * 4];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    ByteToDataFormat4(tmp, format: format).CopyTo(buffer, 4 * i);
-
-                }
-                else
-                {
-                    ByteToDataFormat4(BitConverter.GetBytes(values[i]), format: format).CopyTo(buffer, 4 * i);
-                }
-            }
-
-            return buffer;
-        }
 
         /// <summary>
         /// uint变量转化缓存数据
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this uint value, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToByte(new uint[] { value }, format, reverse);
-        }
+        public static byte[] ToByte(this uint value, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(new uint[1] { value }, BitConverter.GetBytes, format);
 
 
         /// <summary>
@@ -717,29 +599,8 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this uint[] values, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            if (values == null) return null;
-
-            byte[] buffer = new byte[values.Length * 4];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    ByteToDataFormat4(tmp, format: format).CopyTo(buffer, 4 * i);
-
-                }
-                else
-                {
-                    ByteToDataFormat4(BitConverter.GetBytes(values[i]), format: format).CopyTo(buffer, 4 * i);
-
-                }
-            }
-
-            return buffer;
-        }
+        public static byte[] ToByte(this uint[] values, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(values, BitConverter.GetBytes, format);
 
 
         /// <summary>
@@ -747,155 +608,69 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this long value, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToByte(new long[] { value }, format, reverse);
-        }
+        public static byte[] ToByte(this long value, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(new long[1] { value }, BitConverter.GetBytes, format);
 
         /// <summary>
         /// long数组变量转化缓存数据
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this long[] values, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            if (values == null) return null;
+        public static byte[] ToByte(this long[] values, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(values, BitConverter.GetBytes, format);
 
-            byte[] buffer = new byte[values.Length * 8];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    ByteToDataFormat8(tmp, format: format).CopyTo(buffer, 8 * i);
-
-                }
-                else
-                {
-                    ByteToDataFormat8(BitConverter.GetBytes(values[i]), format: format).CopyTo(buffer, 8 * i);
-
-                }
-            }
-
-            return buffer;
-        }
 
         /// <summary>
         /// ulong变量转化缓存数据
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this ulong value, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToByte(new ulong[] { value }, format, reverse);
-        }
+        public static byte[] ToByte(this ulong value, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(new ulong[1] { value }, BitConverter.GetBytes, format);
 
         /// <summary>
         /// ulong数组变量转化缓存数据
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this ulong[] values, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            if (values == null) return null;
+        public static byte[] ToByte(this ulong[] values, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(values, BitConverter.GetBytes, format);
 
-            byte[] buffer = new byte[values.Length * 8];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    ByteToDataFormat8(tmp, format: format).CopyTo(buffer, 8 * i);
-
-                }
-                else
-                {
-                    ByteToDataFormat8(BitConverter.GetBytes(values[i]), format: format).CopyTo(buffer, 8 * i);
-
-                }
-            }
-
-            return buffer;
-        }
 
         /// <summary>
         /// float变量转化缓存数据
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this float value, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToByte(new float[] { value }, format, reverse);
-        }
+        public static byte[] ToByte(this float value, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(new float[1] { value }, BitConverter.GetBytes, format);
+
 
         /// <summary>
         /// float数组变量转化缓存数据
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this float[] values, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            if (values == null) return null;
+        public static byte[] ToByte(this float[] values, EndianFormat format = EndianFormat.ABCD)
+            => NumericToBytes(values, BitConverter.GetBytes, format);
 
-            byte[] buffer = new byte[values.Length * 4];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    ByteToDataFormat4(tmp, format: format).CopyTo(buffer, 4 * i);
-
-                }
-                else
-                {
-                    ByteToDataFormat4(BitConverter.GetBytes(values[i]), format: format).CopyTo(buffer, 4 * i);
-                }
-            }
-
-            return buffer;
-        }
 
         /// <summary>
         /// double变量转化缓存数据
         /// </summary>
         /// <param name="value">等待转化的数据</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this double value, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            return ToByte(new double[] { value }, format, reverse);
-        }
+        public static byte[] ToByte(this double value, EndianFormat format = EndianFormat.ABCD)
+           => NumericToBytes(new double[1] { value }, BitConverter.GetBytes, format);
 
         /// <summary>
         /// double数组变量转化缓存数据
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this double[] values, EndianFormat format = EndianFormat.ABCD, bool reverse = false)
-        {
-            if (values == null) return null;
+        public static byte[] ToByte(this double[] values, EndianFormat format = EndianFormat.ABCD)
+               => NumericToBytes(values, BitConverter.GetBytes, format);
 
-            byte[] buffer = new byte[values.Length * 8];
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (reverse)
-                {
-                    byte[] tmp = BitConverter.GetBytes(values[i]);
-                    Array.Reverse(tmp);
-                    ByteToDataFormat8(tmp, format: format).CopyTo(buffer, 8 * i);
-
-                }
-                else
-                {
-                    ByteToDataFormat8(BitConverter.GetBytes(values[i]), format: format).CopyTo(buffer, 8 * i);
-
-                }
-            }
-
-            return buffer;
-        }
 
         /// <summary>
         /// 使用指定的编码字符串转化缓存数据
@@ -929,202 +704,6 @@ namespace Wombat.Extensions.DataTypeExtensions
 
         #endregion
 
-        #region EndianFormat Support
-
-
-        private static byte[] BoolArrayToByte(bool[] array)
-        {
-            if (array == null) return null;
-
-            int length = array.Length % 8 == 0 ? array.Length / 8 : array.Length / 8 + 1;
-            byte[] buffer = new byte[length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                int index = i / 8;
-                int offect = i % 8;
-                byte temp = 0;
-                switch (offect)
-                {
-                    case 0: temp = 0x01; break;
-                    case 1: temp = 0x02; break;
-                    case 2: temp = 0x04; break;
-                    case 3: temp = 0x08; break;
-                    case 4: temp = 0x10; break;
-                    case 5: temp = 0x20; break;
-                    case 6: temp = 0x40; break;
-                    case 7: temp = 0x80; break;
-                    default: break;
-                }
-                if (array[i]) buffer[index] += temp;
-            }
-
-            return buffer;
-        }
-
-
-        /// <summary>
-        /// 反转多字节的数据信息
-        /// </summary>
-        /// <param name="value">数据字节</param>
-        /// <param name="index">起始索引，默认值为0</param>
-        /// <returns>实际字节信息</returns>
-        private static byte[] ByteToDataFormat4(byte[] value, int index = 0, EndianFormat format = EndianFormat.ABCD)
-        {
-            byte[] buffer = new byte[4];
-            if (value.Length - index < 4) { throw new Exception("字节转换时候目标源长度不足"); }
-            switch (format)
-            {
-                case EndianFormat.ABCD:
-                    {
-                        buffer[0] = value[index + 3];
-                        buffer[1] = value[index + 2];
-                        buffer[2] = value[index + 1];
-                        buffer[3] = value[index + 0];
-                        break;
-                    }
-                case EndianFormat.BADC:
-                    {
-                        buffer[0] = value[index + 2];
-                        buffer[1] = value[index + 3];
-                        buffer[2] = value[index + 0];
-                        buffer[3] = value[index + 1];
-                        break;
-                    }
-
-                case EndianFormat.CDAB:
-                    {
-                        buffer[0] = value[index + 1];
-                        buffer[1] = value[index + 0];
-                        buffer[2] = value[index + 3];
-                        buffer[3] = value[index + 2];
-                        break;
-                    }
-                case EndianFormat.DCBA:
-                    {
-                        buffer[0] = value[index + 0];
-                        buffer[1] = value[index + 1];
-                        buffer[2] = value[index + 2];
-                        buffer[3] = value[index + 3];
-                        break;
-                    }
-            }
-            return buffer;
-        }
-
-
-        /// <summary>
-        /// 反转多字节的数据信息
-        /// </summary>
-        /// <param name="value">数据字节</param>
-        /// <param name="index">起始索引，默认值为0</param>
-        /// <returns>实际字节信息</returns>
-        private static byte[] ByteToDataFormat8(byte[] value, int index = 0, EndianFormat format = EndianFormat.ABCD)
-        {
-            byte[] buffer = new byte[8];
-            if (value.Length >= 8)
-                switch (format)
-                {
-                    case EndianFormat.ABCD:
-                        {
-                            buffer[0] = value[index + 7];
-                            buffer[1] = value[index + 6];
-                            buffer[2] = value[index + 5];
-                            buffer[3] = value[index + 4];
-                            buffer[4] = value[index + 3];
-                            buffer[5] = value[index + 2];
-                            buffer[6] = value[index + 1];
-                            buffer[7] = value[index + 0];
-                            break;
-                        }
-                    case EndianFormat.BADC:
-                        {
-                            buffer[0] = value[index + 6];
-                            buffer[1] = value[index + 7];
-                            buffer[2] = value[index + 4];
-                            buffer[3] = value[index + 5];
-                            buffer[4] = value[index + 2];
-                            buffer[5] = value[index + 3];
-                            buffer[6] = value[index + 0];
-                            buffer[7] = value[index + 1];
-                            break;
-                        }
-
-                    case EndianFormat.CDAB:
-                        {
-                            buffer[0] = value[index + 1];
-                            buffer[1] = value[index + 0];
-                            buffer[2] = value[index + 3];
-                            buffer[3] = value[index + 2];
-                            buffer[4] = value[index + 5];
-                            buffer[5] = value[index + 4];
-                            buffer[6] = value[index + 7];
-                            buffer[7] = value[index + 6];
-                            break;
-                        }
-                    case EndianFormat.DCBA:
-                        {
-                            buffer[0] = value[index + 0];
-                            buffer[1] = value[index + 1];
-                            buffer[2] = value[index + 2];
-                            buffer[3] = value[index + 3];
-                            buffer[4] = value[index + 4];
-                            buffer[5] = value[index + 5];
-                            buffer[6] = value[index + 6];
-                            buffer[7] = value[index + 7];
-                            break;
-                        }
-                }
-            return buffer;
-        }
-
-
-        /// <summary>
-        /// 从Byte数组中提取位数组，length代表位数 ->
-        /// Extracts a bit array from a byte array, length represents the number of digits
-        /// </summary>
-        /// <param name="InBytes">原先的字节数组</param>
-        /// <param name="length">想要转换的长度，如果超出自动会缩小到数组最大长度</param>
-        /// <returns>转换后的bool数组</returns>
-        /// <example>
-        /// <code lang="cs" source="HslCommunication_Net45.Test\Documentation\Samples\BasicFramework\SoftBasicExample.cs" region="ByteToBoolArray" title="ByteToBoolArray示例" />
-        /// </example> 
-        private static bool[] ByteToBoolArray(byte[] InBytes, int length = 1)
-        {
-            if (InBytes == null) return null;
-
-            if (length > InBytes.Length * 8) length = InBytes.Length * 8;
-            bool[] buffer = new bool[length];
-
-            for (int i = 0; i < length; i++)
-            {
-                int index = i / 8;
-                int offect = i % 8;
-
-                byte temp = 0;
-                switch (offect)
-                {
-                    case 0: temp = 0x01; break;
-                    case 1: temp = 0x02; break;
-                    case 2: temp = 0x04; break;
-                    case 3: temp = 0x08; break;
-                    case 4: temp = 0x10; break;
-                    case 5: temp = 0x20; break;
-                    case 6: temp = 0x40; break;
-                    case 7: temp = 0x80; break;
-                    default: break;
-                }
-
-                if ((InBytes[index] & temp) == temp)
-                {
-                    buffer[i] = true;
-                }
-            }
-
-            return buffer;
-        }
-
-
-        #endregion
 
 
 
