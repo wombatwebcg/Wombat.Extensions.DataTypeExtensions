@@ -69,13 +69,17 @@ namespace Wombat.Extensions.DataTypeExtensionsTest
         }
 
         [Theory]
-        [InlineData(0x1234567831323334, EndianFormat.ABCD, new byte[] { 0x12, 0x34, 0x56, 0x78, 0x31, 0x32, 0x33, 0x34 })]
-        [InlineData(0x1234567831323334, EndianFormat.BADC, new byte[] { 0x34, 0x12, 0x78, 0x56, 0x32,0x31, 0x34, 0x33})]
-        [InlineData(0x1234567831323334, EndianFormat.CDAB, new byte[] { 0x56, 0x78, 0x12, 0x34, 0x33, 0x34, 0x31, 0x32 })]
-        [InlineData(0x1234567831323334, EndianFormat.DCBA, new byte[] { 0x78, 0x56, 0x34, 0x12, 0x34, 0x33, 0x32, 0x31})]
+        [InlineData(0x1234567831323334, EndianFormat.ABCD, new byte[] { 0x12, 0x34, 0x56, 0x78, 0x31, 0x32, 0x33, 0x34})]
+        [InlineData(0x1234567831323334, EndianFormat.BADC, new byte[] { 0x34, 0x12, 0x78, 0x56, 0x32, 0x31, 0x34, 0x33})]
+        [InlineData(0x1234567831323334, EndianFormat.CDAB, new byte[] { 0x33, 0x34, 0x31, 0x32, 0x56, 0x78, 0x12, 0x34 })]
+        [InlineData(0x1234567831323334, EndianFormat.DCBA, new byte[] { 0x34, 0x33, 0x32, 0x31, 0x78, 0x56, 0x34, 0x12})]
 
         public void Int64_EndianHandling(long value, EndianFormat format, byte[] expected)
         {
+            var pp = BitConverter.GetBytes(value);
+            var pp1 = value.ToByte(format);
+
+
             Assert.Equal(expected, value.ToByte(format));
         }
 
@@ -116,8 +120,8 @@ namespace Wombat.Extensions.DataTypeExtensionsTest
         [Theory]
         [InlineData(EndianFormat.ABCD, 0x1234567831323334)]
         [InlineData(EndianFormat.BADC, 0x3412785632313433)]
-        [InlineData(EndianFormat.CDAB, 0x5678123433343132)]
-        [InlineData(EndianFormat.DCBA, 0x7856341234333231)]
+        [InlineData(EndianFormat.CDAB, 0x3334313256781234)]
+        [InlineData(EndianFormat.DCBA, 0x3433323178563412)]
         public void Int64_MultiFormatSupport(EndianFormat format, long expected)
         {
             byte[] bytes = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x31, 0x32, 0x33, 0x34 };

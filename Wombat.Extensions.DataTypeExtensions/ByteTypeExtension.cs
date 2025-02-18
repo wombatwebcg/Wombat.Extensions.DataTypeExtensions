@@ -192,12 +192,12 @@ namespace Wombat.Extensions.DataTypeExtensions
 
 
 
-        private static byte[] AdjustEndian(byte[] bytes, EndianFormat format, int size)
+        private static byte[] AdjustEndian(byte[] bytes, EndianFormat format)
         {
             // 基本的合法性检查
-            if (bytes.Length != size)
+            if (bytes.Length % 4 != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bytes), "Byte array length does not match the specified size.");
+                throw new ArgumentOutOfRangeException(nameof(bytes), "Byte array length does not match.");
             }
 
             // 根据字节序处理不同格式
@@ -235,7 +235,7 @@ namespace Wombat.Extensions.DataTypeExtensions
                     }
                     else if (bytes.Length == 8)
                     {
-                        return new byte[] { bytes[5], bytes[4], bytes[7], bytes[6], bytes[1], bytes[0], bytes[3], bytes[2]};
+                        return new byte[] { bytes[1], bytes[0], bytes[3], bytes[2] ,bytes[5], bytes[4], bytes[7], bytes[6]};
                     }
                     break;
 
@@ -262,8 +262,7 @@ namespace Wombat.Extensions.DataTypeExtensions
 
         private static T ConvertWithEndian<T>(byte[] bytes, EndianFormat format, Func<byte[], int, T> converter)
         {
-            var size = bytes.Length;
-            var adjusted = AdjustEndian(bytes, format, size);
+            var adjusted = AdjustEndian(bytes, format);
             var result = converter(adjusted, 0);            
             return result;
         }
@@ -495,7 +494,7 @@ namespace Wombat.Extensions.DataTypeExtensions
             for (int i = 0; i < values.Length; i++)
             {
                 var bytes = converter(values[i]);
-                AdjustEndian(bytes, format, bytes.Length).CopyTo(result, i * bytes.Length);
+                AdjustEndian(bytes, format).CopyTo(result, i * bytes.Length);
             }
             return result;
         }
