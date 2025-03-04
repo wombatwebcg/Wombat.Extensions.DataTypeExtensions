@@ -106,7 +106,7 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <param name="index">位的索引</param>
         /// <param name="length">bool长度</param>
         /// <returns>bool数组</returns>
-        public static bool[] ToBoolArray(this byte[] buffer, int index, int length, bool reverse = false)
+        public static bool[] ToBool(this byte[] buffer, int index, int length, bool reverse = false)
         {
             int byteLength = (int)Math.Ceiling(length / 8.0);
             byte[] bytesArray = new byte[byteLength];
@@ -117,9 +117,25 @@ namespace Wombat.Extensions.DataTypeExtensions
                 Array.Reverse(bytesArray);
             }
 
-            return Enumerable.Range(0, length)
-                .Select(i => (bytesArray[i / 8] & (1 << (7 - i % 8))) != 0)
-                .ToArray();
+            bool[] result = new bool[length];
+            int resultIndex = 0;
+
+            foreach (byte b in bytesArray)
+            {
+                for (int bit = 0; bit < 8; bit++)
+                {
+                    if (resultIndex >= length) break;
+
+                    // 根据reverse决定读取位的顺序
+                    int currentBit = reverse ? (7 - bit) : bit;
+                    int mask = 1 << currentBit;
+                    bool value = (b & mask) != 0;
+                    result[resultIndex] = value;
+                    resultIndex++;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -286,12 +302,12 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>int数组对象</returns>
         public static int[] ToInt32(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            if (length % 4 != 0)
+            if (buffer.Length % 4 != 0)
             {
                 throw new ArgumentException("Length must be a multiple of 4 for ToInt32 conversion.");
             }
 
-            var result = new int[length / 4];
+            var result = new int[length];
             for (int i = 0; i < result.Length; i++)
             {
                 var byteSegment = buffer.AsSpan(index + i * 4, 4).ToArray();
@@ -321,12 +337,12 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>uint数组对象</returns>
         public static uint[] ToUInt32(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            if (length % 4 != 0)
+            if (buffer.Length % 4 != 0)
             {
-                throw new ArgumentException("Length must be a multiple of 4 for ToUInt32 conversion.");
+                throw new ArgumentException("Length must be a multiple of 4 for ToInt32 conversion.");
             }
 
-            var result = new uint[length / 4];
+            var result = new uint[length];
             for (int i = 0; i < result.Length; i++)
             {
                 var byteSegment = buffer.AsSpan(index + i * 4, 4).ToArray();
@@ -353,12 +369,12 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>long数组对象</returns>
         public static long[] ToInt64(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            if (length % 8 != 0)
+            if (buffer.Length % 8 != 0)
             {
                 throw new ArgumentException("Length must be a multiple of 8 for ToInt64 conversion.");
             }
 
-            var result = new long[length / 8];
+            var result = new long[length];
             for (int i = 0; i < result.Length; i++)
             {
                 var byteSegment = buffer.AsSpan(index + i * 8, 8).ToArray();
@@ -387,18 +403,18 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>ulong数组对象</returns>
         public static ulong[] ToUInt64(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            if (length % 8 != 0)
+            if (buffer.Length % 8 != 0)
             {
-                throw new ArgumentException("Length must be a multiple of 8 for ToInt64 conversion.");
+                throw new ArgumentException("Length must be a multiple of 8 for ToUInt64 conversion.");
             }
 
-            var result = new ulong[length / 8];
+            var result = new ulong[length];
             for (int i = 0; i < result.Length; i++)
             {
                 var byteSegment = buffer.AsSpan(index + i * 8, 8).ToArray();
                 result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToUInt64);
             }
-            return result;
+            return result; ;
         }
 
         /// <summary>
@@ -419,12 +435,12 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>float数组对象</returns>
         public static float[] ToFloat(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            if (length % 4 != 0)
+            if (buffer.Length % 4 != 0)
             {
-                throw new ArgumentException("Length must be a multiple of 4 for float conversion.");
+                throw new ArgumentException("Length must be a multiple of 4 for ToInt32 conversion.");
             }
 
-            var result = new float[length / 4];
+            var result = new float[length];
             for (int i = 0; i < result.Length; i++)
             {
                 var byteSegment = buffer.AsSpan(index + i * 4, 4).ToArray();
@@ -452,18 +468,18 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <returns>double数组对象</returns>
         public static double[] ToDouble(this byte[] buffer, int index, int length, EndianFormat format = EndianFormat.ABCD)
         {
-            if (length % 8 != 0)
+            if (buffer.Length % 8 != 0)
             {
-                throw new ArgumentException("Length must be a multiple of 8 for double conversion.");
+                throw new ArgumentException("Length must be a multiple of 8 for ToUInt64 conversion.");
             }
 
-            var result = new double[length / 8];
+            var result = new double[length];
             for (int i = 0; i < result.Length; i++)
             {
                 var byteSegment = buffer.AsSpan(index + i * 8, 8).ToArray();
                 result[i] = ConvertWithEndian(byteSegment, format, BitConverter.ToDouble);
             }
-            return result;
+            return result; ;
         }
 
 
@@ -501,16 +517,21 @@ namespace Wombat.Extensions.DataTypeExtensions
 
         public static byte[] NumericToBytes<T>(T[] values, Func<T, byte[]> converter, bool reverse = false)
         {
-            var result = new byte[values.Length * converter(default(T)).Length];
+            if (values == null || values.Length == 0) return Array.Empty<byte>();
+
+            // 直接用第一个值确定字节长度，避免 default(T) 的调用
+            int byteLength = converter(values[0]).Length;
+            var result = new byte[values.Length * byteLength];
+
             for (int i = 0; i < values.Length; i++)
             {
                 var bytes = converter(values[i]);
                 if (reverse) Array.Reverse(bytes);
-                bytes.CopyTo(result, i * bytes.Length);
+                bytes.CopyTo(result, i * byteLength);
             }
+
             return result;
         }
-
         /// <summary>
         /// bool变量转化缓存数据
         /// </summary>
@@ -524,8 +545,21 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// </summary>
         /// <param name="values">等待转化的数组</param>
         /// <returns>buffer数据</returns>
-        public static byte[] ToByte(this bool[] values)
-         => values.SelectMany((b, i) => BitConverter.GetBytes(b)).ToArray();
+        public static byte[] ToBytes(this bool[] values)
+        {
+            int byteCount = (values.Length + 7) / 8; // 计算需要的字节数
+            byte[] result = new byte[byteCount];
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (values[i])
+                {
+                    result[i / 8] |= (byte)(1 << (i % 8)); // 将对应位设为 1
+                }
+            }
+
+            return result;
+        }
 
 
 

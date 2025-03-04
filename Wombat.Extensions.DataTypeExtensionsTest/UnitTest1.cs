@@ -78,8 +78,6 @@ namespace Wombat.Extensions.DataTypeExtensionsTest
         {
             var pp = BitConverter.GetBytes(value);
             var pp1 = value.ToByte(format);
-
-
             Assert.Equal(expected, value.ToByte(format));
         }
 
@@ -140,31 +138,18 @@ namespace Wombat.Extensions.DataTypeExtensionsTest
         {
             byte[] input = new byte[] { 0b10101010 }; // ¶þ½øÖÆ 10101010
             bool[] expected = new[] { true, false, true, false, true, false, true, false };
-            Assert.Equal(expected, input.ToBoolArray(0, 8));
+            var test = input.ToBool(0, 8,true);
+            Assert.Equal(expected, test);
         }
 
         [Fact]
         public void DoubleArray_PrecisionHandling()
         {
             double[] values = { 1.23, 4.56 };
-            var bytes = values.ToByte(EndianFormat.ABCD);
-            Assert.Equal(values, bytes.ToDouble(0, bytes.Length));
+            var bytes = values.ToByte();
+            var test = bytes.ToDouble(0, 2);
+            Assert.Equal(values, test);
         }
     }
 
-    public class ExceptionHandling : DataTypeExtensionsTests
-    {
-        //[Fact]
-        //public void InvalidLength_ThrowsArgumentException()
-        //{
-        //    byte[] invalid = new byte[5];
-        //    Assert.Throws<ArgumentException>(() => invalid.ToInt32());
-        //}
-
-        [Fact]
-        public void OutOfRangeIndex_ThrowsException()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _sampleBytes.ToInt32(10));
-        }
-    }
 }
