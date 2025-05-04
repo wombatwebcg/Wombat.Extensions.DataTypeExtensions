@@ -163,8 +163,9 @@ namespace Wombat.Extensions.DataTypeExtensions
             for (int i = 0; i < count; i++)
             {
                 var span = buffer.AsSpan(index + i * typeSize, typeSize);
-                if (reverse) span.Reverse();
-                result[i] = converter(span.ToArray(), 0);
+                var bytes = span.ToArray(); 
+                if (reverse) Array.Reverse(bytes); 
+                result[i] = converter(bytes, 0);
             }
             return result;
         }

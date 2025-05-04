@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
@@ -14,70 +15,64 @@ namespace Wombat.Extensions.DataTypeExtensions
         /// <typeparam name="T">转换类型</typeparam>
         /// <param name="dt">数据源</param>
         /// <returns></returns>
-        public static List<T> ToList<T>(this DataTable dt)
+        public static List<T> ToList<T>(this DataTable dt) where T : new()
         {
             List<T> list = new List<T>();
 
-            //确认参数有效,若无效则返回Null
-            if (dt == null)
-                return list;
-            else if (dt.Rows.Count == 0)
+            // 确认参数有效, 若无效则返回空列表
+            if (dt == null || dt.Rows.Count == 0)
                 return list;
 
-            Dictionary<string, string> dicField = new Dictionary<string, string>();
-            Dictionary<string, string> dicProperty = new Dictionary<string, string>();
+            Dictionary<string, FieldInfo> dicField = new Dictionary<string, FieldInfo>();
+            Dictionary<string, PropertyInfo> dicProperty = new Dictionary<string, PropertyInfo>();
             Type type = typeof(T);
 
-            //创建字段字典，方便查找字段名
-            type.GetFields().ForEach(aFiled =>
+            foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
-                dicField.Add(aFiled.Name.ToLower(), aFiled.Name);
-            });
+                dicField[field.Name.ToLower()] = field;
+            }
 
-            //创建属性字典，方便查找属性名
-            type.GetProperties().ForEach(aProperty =>
+            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                dicProperty.Add(aProperty.Name.ToLower(), aProperty.Name);
-            });
+                dicProperty[property.Name.ToLower()] = property;
+            }
 
-            for (int i = 0; i < dt.Rows.Count; i++)
+            // 预编译构造函数表达式，替代 Activator.CreateInstance<T>()
+            var constructor = Expression.New(typeof(T));
+            var compiledConstructor = Expression.Lambda<Func<T>>(constructor).Compile();
+
+            foreach (DataRow row in dt.Rows)
             {
-                //创建泛型对象
-                T _t = Activator.CreateInstance<T>();
-                for (int j = 0; j < dt.Columns.Count; j++)
+                T instance = compiledConstructor();
+                foreach (DataColumn column in dt.Columns)
                 {
-                    string memberKey = dt.Columns[j].ColumnName.ToLower();
+                    string memberKey = column.ColumnName.ToLower();
+                    object dbValue = row[column];
 
-                    //字段赋值
-                    if (dicField.ContainsKey(memberKey))
+                    if (dbValue is DBNull)
+                        dbValue = null;
+
+                    // 赋值到字段
+                    if (dicField.TryGetValue(memberKey, out FieldInfo field))
                     {
-                        FieldInfo theField = type.GetField(dicField[memberKey]);
-                        var dbValue = dt.Rows[i][j];
-                        if (dbValue.GetType() == typeof(DBNull))
-                            dbValue = null;
                         if (dbValue != null)
                         {
-                            Type memberType = theField.FieldType;
-                            dbValue = dbValue.ChangeType_ByConvert(memberType);
+                            dbValue = Convert.ChangeType(dbValue, field.FieldType);
                         }
-                        theField.SetValue(_t, dbValue);
+                        field.SetValue(instance, dbValue);
                     }
-                    //属性赋值
-                    if (dicProperty.ContainsKey(memberKey))
+
+                    // 赋值到属性
+                    if (dicProperty.TryGetValue(memberKey, out PropertyInfo property))
                     {
-                        PropertyInfo theProperty = type.GetProperty(dicProperty[memberKey]);
-                        var dbValue = dt.Rows[i][j];
-                        if (dbValue.GetType() == typeof(DBNull))
-                            dbValue = null;
                         if (dbValue != null)
                         {
-                            Type memberType = theProperty.PropertyType;
-                            dbValue = dbValue.ChangeType_ByConvert(memberType);
+                            dbValue = Convert.ChangeType(dbValue, property.PropertyType);
                         }
-                        theProperty.SetValue(_t, dbValue);
+                        property.SetValue(instance, dbValue);
                     }
                 }
-                list.Add(_t);
+                list.Add(instance);
             }
             return list;
         }

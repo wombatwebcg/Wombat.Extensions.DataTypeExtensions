@@ -9,22 +9,21 @@ namespace Wombat.Extensions.DataTypeExtensions
     {
         public static DataTypeEnums ToDataTypeEnum(this Type type)
         {
-            if (type == null || !type.IsValueType || type.IsPrimitive || type == typeof(string))
-                throw new ArgumentException("Input type must be a non-null struct or string.", nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
 
-            if (type == typeof(bool)) return DataTypeEnums.Bool;
-            if (type == typeof(byte)) return DataTypeEnums.Byte;
-            if (type == typeof(short)) return DataTypeEnums.Int16;
-            if (type == typeof(ushort)) return DataTypeEnums.UInt16;
-            if (type == typeof(int)) return DataTypeEnums.Int32;
-            if (type == typeof(uint)) return DataTypeEnums.UInt32;
-            if (type == typeof(long)) return DataTypeEnums.Int64;
-            if (type == typeof(ulong)) return DataTypeEnums.UInt64;
-            if (type == typeof(float)) return DataTypeEnums.Float;
-            if (type == typeof(double)) return DataTypeEnums.Double;
-            if (type == typeof(string)) return DataTypeEnums.String;
-
-            return DataTypeEnums.None;
+            return type == typeof(bool) ? DataTypeEnums.Bool :
+                   type == typeof(byte) ? DataTypeEnums.Byte :
+                   type == typeof(short) ? DataTypeEnums.Int16 :
+                   type == typeof(ushort) ? DataTypeEnums.UInt16 :
+                   type == typeof(int) ? DataTypeEnums.Int32 :
+                   type == typeof(uint) ? DataTypeEnums.UInt32 :
+                   type == typeof(long) ? DataTypeEnums.Int64 :
+                   type == typeof(ulong) ? DataTypeEnums.UInt64 :
+                   type == typeof(float) ? DataTypeEnums.Float :
+                   type == typeof(double) ? DataTypeEnums.Double :
+                   type == typeof(string) ? DataTypeEnums.String :
+                   DataTypeEnums.None;
         }
 
         public static Type ToStructType(this DataTypeEnums dataType)
@@ -46,148 +45,79 @@ namespace Wombat.Extensions.DataTypeExtensions
             }
         }
 
-        public static T ToType<T>(this object value, DataTypeEnums dataType) where T : struct
-        {
-            try
-            {
-                // 获取目标类型
-                Type targetType = dataType.ToStructType();
-
-                // 检查目标类型是否为泛型T
-                if (targetType != typeof(T))
-                    throw new InvalidOperationException($"Target type {typeof(T).Name} does not match the DataTypeEnum provided.");
-
-                // 转换对象
-                return (T)Convert.ChangeType(value, targetType);
-            }
-            catch (InvalidCastException)
-            {
-                throw new InvalidCastException($"Unable to cast value to type {typeof(T).Name}.");
-            }
-            catch (FormatException)
-            {
-                throw new FormatException($"The value provided is not in the correct format for type {typeof(T).Name}.");
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"An error occurred during conversion: {ex.Message}");
-            }
-        }
-        public static T ToType<T>(this object value) where T : struct
-        {
-            try
-            {
-                // 获取目标类型
-                Type targetType = typeof(T);
-
-                // 检查目标类型是否为泛型T
-                if (targetType != typeof(T))
-                    throw new InvalidOperationException($"Target type {typeof(T).Name} does not match the DataTypeEnum provided.");
-
-                // 检查value是否为值类型
-                if (value != null && !value.GetType().IsValueType)
-                    throw new ArgumentException("Value must be a value type (struct), not a class object.");
-                // 转换对象
-                return (T)Convert.ChangeType(value, targetType);
-            }
-            catch (InvalidCastException)
-            {
-                throw new InvalidCastException($"Unable to cast value to type {typeof(T).Name}.");
-            }
-            catch (FormatException)
-            {
-                throw new FormatException($"The value provided is not in the correct format for type {typeof(T).Name}.");
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"An error occurred during conversion:{value} {typeof(T).Name} {ex.Message}");
-            }
-        }
-
         public static T ConvertFromString<T>(this string value, DataTypeEnums dataType) where T : struct
         {
             try
             {
-                // 获取目标类型
-                Type targetType = ToStructType(dataType);
-
-                // 检查目标类型是否为泛型T
-                if (targetType != typeof(T))
-                    throw new InvalidOperationException($"Target type {typeof(T).Name} does not match the DataTypeEnum provided.");
-
-                // 特殊处理布尔类型
-                if (typeof(T) == typeof(bool))
+                switch (dataType)
                 {
-                    if (value == "0") return (T)(object)false;
-                    if (value == "1") return (T)(object)true;
+                    case DataTypeEnums.Bool:
+                        if (value == "0") return (T)(object)false;
+                        if (value == "1") return (T)(object)true;
+                        return (T)(object)bool.Parse(value);
+                    case DataTypeEnums.Byte: return (T)(object)byte.Parse(value);
+                    case DataTypeEnums.Int16: return (T)(object)short.Parse(value);
+                    case DataTypeEnums.UInt16: return (T)(object)ushort.Parse(value);
+                    case DataTypeEnums.Int32: return (T)(object)int.Parse(value);
+                    case DataTypeEnums.UInt32: return (T)(object)uint.Parse(value);
+                    case DataTypeEnums.Int64: return (T)(object)long.Parse(value);
+                    case DataTypeEnums.UInt64: return (T)(object)ulong.Parse(value);
+                    case DataTypeEnums.Float: return (T)(object)float.Parse(value);
+                    case DataTypeEnums.Double: return (T)(object)double.Parse(value);
+                    default:
+                        throw new InvalidOperationException($"Unsupported DataTypeEnum {dataType} for conversion.");
                 }
-
-                // 将字符串转换为目标类型
-                return (T)Convert.ChangeType(value, targetType);
-            }
-            catch (InvalidCastException)
-            {
-                throw new InvalidCastException($"Unable to cast value to type {typeof(T).Name}.");
             }
             catch (FormatException)
             {
-                throw new FormatException($"The value provided is not in the correct format for type {typeof(T).Name}.");
+                throw new FormatException($"The value '{value}' is not in the correct format for type {typeof(T).Name}.");
+            }
+            catch (OverflowException)
+            {
+                throw new OverflowException($"The value '{value}' is out of range for type {typeof(T).Name}.");
             }
             catch (Exception ex)
             {
-                throw new Exception($"An error occurred during conversion: {ex.Message}");
+                throw new Exception($"Error converting value '{value}' to type {typeof(T).Name}: {ex.Message}");
             }
         }
+
 
         public static object ConvertFromStringToObject(this string value, DataTypeEnums dataType)
         {
-            Type targetType = null;
             try
             {
-                // 获取目标类型
-                targetType = ToStructType(dataType);
-
-                // 将字符串转换为目标类型
-                return Convert.ChangeType(value, targetType);
+                switch (dataType)
+                {
+                    case DataTypeEnums.Bool: return value == "1" || bool.Parse(value);
+                    case DataTypeEnums.Byte: return byte.Parse(value);
+                    case DataTypeEnums.Int16: return short.Parse(value);
+                    case DataTypeEnums.UInt16: return ushort.Parse(value);
+                    case DataTypeEnums.Int32: return int.Parse(value);
+                    case DataTypeEnums.UInt32: return uint.Parse(value);
+                    case DataTypeEnums.Int64: return long.Parse(value);
+                    case DataTypeEnums.UInt64: return ulong.Parse(value);
+                    case DataTypeEnums.Float: return float.Parse(value);
+                    case DataTypeEnums.Double: return double.Parse(value);
+                    case DataTypeEnums.String: return value;
+                    default:
+                        throw new InvalidOperationException($"Unsupported DataTypeEnum {dataType} for conversion.");
+                }
             }
-            catch (InvalidCastException)
-            {
-                throw new InvalidCastException($"Unable to cast value to type {targetType?.Name}.");
-            }
+            
             catch (FormatException)
             {
-                throw new FormatException($"The value provided is not in the correct format for type {targetType?.Name}.");
+                throw new FormatException($"The value '{value}' is not in the correct format for type {dataType}.");
+            }
+            catch (OverflowException)
+            {
+                throw new OverflowException($"The value '{value}' is out of range for type {dataType}.");
             }
             catch (Exception ex)
             {
-                throw new Exception($"An error occurred during conversion: {ex.Message}");
+                throw new Exception($"Error converting value '{value}' to type {dataType}: {ex.Message}");
             }
         }
-
-        public static DataTypeEnums GetDataTypeEnumFromObject(this object value)
-        {
-            if (value == null)
-            {
-                return DataTypeEnums.None;
-            }
-
-            Type type = value.GetType();
-
-            if (type == typeof(bool)) return DataTypeEnums.Bool;
-            if (type == typeof(byte)) return DataTypeEnums.Byte;
-            if (type == typeof(short)) return DataTypeEnums.Int16;
-            if (type == typeof(ushort)) return DataTypeEnums.UInt16;
-            if (type == typeof(int)) return DataTypeEnums.Int32;
-            if (type == typeof(uint)) return DataTypeEnums.UInt32;
-            if (type == typeof(long)) return DataTypeEnums.Int64;
-            if (type == typeof(ulong)) return DataTypeEnums.UInt64;
-            if (type == typeof(float)) return DataTypeEnums.Float;
-            if (type == typeof(double)) return DataTypeEnums.Double;
-            if (type == typeof(string)) return DataTypeEnums.String;
-
-            return DataTypeEnums.None; // 默认返回None，表示不支持的类型
-        }
-
-
     }
+
 }
